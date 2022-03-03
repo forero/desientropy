@@ -12,6 +12,7 @@ def summary_tile_entropy(release_path, tile_id):
     n_good_z_list = []
     z_entropy = []
     petal_list = [] 
+    all_good_z = []
     for petal_id in range(10):
         search_path = "{}/tiles/cumulative/{}/*/redrock-*-{}-thru*.fits".format(release_path, tile_id, tile_id)
         #print(search_path)
@@ -33,6 +34,7 @@ def summary_tile_entropy(release_path, tile_id):
             try:
                 ii = (z_tile_per_exp['ZWARN']==0) #& (exp_fmap_tile_per_exp['FIBERSTATUS']==0)
                 n_good_z = np.count_nonzero(ii)
+                all_good_z += list(z_tile_per_exp['Z'][ii])
                 h = desientropy.compute.entropy_1d(z_tile_per_exp['Z'][ii])
                 n_gal = np.count_nonzero(z_tile_per_exp['SPECTYPE'][ii]=='GALAXY')
                 n_star = np.count_nonzero(z_tile_per_exp['SPECTYPE'][ii]=='STAR')
@@ -48,8 +50,9 @@ def summary_tile_entropy(release_path, tile_id):
                 pass
         except:
             pass
+        h_tile = desientropy.compute.entropy_1d(all_good_z)
     return {'petal_id':petal_list, 'z_entropy':z_entropy, 'n_gal':n_gal_list, 'n_star':n_star_list, 'n_qso':n_qso_list, 
-           'n_good_z':n_good_z_list}
+           'n_good_z':n_good_z_list, 'z_entropy_tile':h_tile}
 
 
 def summary_release_entropy(release, n_tiles_max=None, lastnight=None):
@@ -74,7 +77,7 @@ def summary_release_entropy(release, n_tiles_max=None, lastnight=None):
         filename = 'summary_rr_entropy_{}_{}.csv'.format(release,lastnight)
     print(filename)
     out = open(filename, 'w')
-    h = 'TILEID,PROGRAM,SURVEY,LASTNIGHT,PETALID,H,N_GAL,N_STAR,N_QSO,N_GOOD_Z\n'
+    h = 'TILEID,PROGRAM,SURVEY,LASTNIGHT,PETALID,H,H_TILE,N_GAL,N_STAR,N_QSO,N_GOOD_Z\n'
     out.write(h)
     out.close()
     
@@ -89,11 +92,12 @@ def summary_release_entropy(release, n_tiles_max=None, lastnight=None):
         if len(a['petal_id']):
             n_p = len(a['petal_id'])
             for j in range(n_p):
-                s = '{},{},{},{},{},{},{},{},{},{}\n'.format(data_tiles_release['TILEID'].iloc[i], 
+                s = '{},{},{},{},{},{},{},{},{},{},{}\n'.format(data_tiles_release['TILEID'].iloc[i], 
                                                     data_tiles_release['FAPRGRM'].iloc[i],
                                                     data_tiles_release['SURVEY'].iloc[i],
                                                     data_tiles_release['LASTNIGHT'].iloc[i],
                                                  a['petal_id'][j],a['z_entropy'][j],
+                                                a['z_entropy_tile'],
                                      a['n_gal'][j], a['n_star'][j], a['n_qso'][j], a['n_good_z'][j])
                 out = open(filename, 'a')
                 out.write(s)
