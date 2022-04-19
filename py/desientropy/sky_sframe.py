@@ -19,7 +19,7 @@ def read_sky_sframe(sframe_file):
         sky = None
     return sky
 
-def summary_entropy_expid(release, date, expid, program, survey):
+def summary_entropy_expid(release, date, expid, tileid, program, survey, sample_lambda=False):
     n_petals = 10
     bands = ['b', 'r', 'z']
     summary = {}
@@ -27,6 +27,7 @@ def summary_entropy_expid(release, date, expid, program, survey):
     summary['PETAL'] = []
     summary['H'] = []
     summary['EXPID'] = []
+    summary['TILEID'] = []
     summary['NIGHT'] = []
     summary['PROGRAM'] = []
     summary['SURVEY'] = []
@@ -35,12 +36,29 @@ def summary_entropy_expid(release, date, expid, program, survey):
         for band in bands:
             filename = '{}/{}/{:08d}/sframe-{}{}-{:08d}.fits'.format(release_path, date, expid, band, i, expid)
             sky_petal = read_sky_sframe(filename)
+
             if sky_petal is not None:
+                if sample_lambda:
+                    n_lambda = np.shape(sky_petal)[1]
+                    n_fibers = np.shape(sky_petal)[0]
+                    n_tau = 20
+                    n_new_lambda = n_lambda//n_tau
+                    #print(n_fibers, n_new_lambda)
+                    tmp_sky_petal = np.ones([n_fibers, n_new_lambda])
+                    #print(np.shape(tmp_sky_petal))
+                    for ff in range(n_fibers):
+                        for ll in range(n_new_lambda):
+                            tmp_sky_petal[ff,ll] = np.median(sky_petal[ff,ll*n_tau:(ll+1)*n_tau])
+                    sky_petal = tmp_sky_petal.copy()
+                        
+                
+                
                 entropy =  desientropy.compute.entropy_2d(sky_petal)
                 summary['BAND'].append(band)
                 summary['PETAL'].append(i)
                 summary['H'].append(entropy)
                 summary['EXPID'].append(expid)
+                summary['TILEID'].append(tileid)
                 summary['NIGHT'].append(date)
                 summary['PROGRAM'].append(program)
                 summary['SURVEY'].append(survey)
@@ -53,12 +71,13 @@ def summary_entropy_expid(release, date, expid, program, survey):
     return 
     #print(summary)
     
-def summary_entropy_night(release, date):
+def summary_entropy_night(release, date, sample_lambda=False):
     exps_night = list_exps(release, date)
     n = len(exps_night)
     for i in range(n):
         summary_entropy_expid(release, date, 
                               exps_night['EXPID'].iloc[i], 
+                              exps_night['TILEID'].iloc[i],
                               exps_night['PROGRAM'].iloc[i],
-                              exps_night['SURVEY'].iloc[i])
+                              exps_night['SURVEY'].iloc[i], sample_lambda=sample_lambda)
     
