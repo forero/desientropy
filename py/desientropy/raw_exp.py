@@ -30,7 +30,7 @@ def read_raw_exp(desi_exp_filename):
         raw_data[ext_name] = a.read()
     return {'DATA':raw_data, 'OBSTYPE':obstype, 'PROGRAM':program, 'EXPID':expid, 'NIGHT':night}
 
-def new_data_amp(data_amp, tau=30):
+def new_data_amp(data_amp, tau=32):
     n_x = np.shape(data_amp)[0]
     n_y = np.shape(data_amp)[1]
     new_n_x = n_x//tau
